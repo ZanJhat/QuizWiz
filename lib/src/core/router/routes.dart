@@ -8,4 +8,5 @@ class Routes {
   static const quiz = '/multiple_choice_quiz';
   static const generatedFlashcards = '/generated_flashcards';
   static const writingQuiz = '/writing_quiz';
+  static const settings = '/settings';
 }

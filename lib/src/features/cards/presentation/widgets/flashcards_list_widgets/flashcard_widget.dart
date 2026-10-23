@@ -18,7 +18,49 @@ class FlashcardWidget extends StatelessWidget {
               card.question,
               style: Theme.of(context).textTheme.headlineSmall,
             ),
-            Text(card.answer),
+            if (card.tags.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Wrap(
+                  spacing: 4,
+                  runSpacing: 2,
+                  children: card.tags
+                      .map((tag) => Chip(
+                            label: Text(tag),
+                            visualDensity: VisualDensity.compact,
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                          ))
+                      .toList(),
+                ),
+              ),
+            if (card.isGroup)
+              Text('${card.children.length} câu hỏi con')
+            else
+              Text(card.answer),
+            if (card.hasFixedChoices)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  card.choices
+                      .asMap()
+                      .entries
+                      .where((e) => e.value.trim().isNotEmpty)
+                      .map((e) {
+                    final letter = String.fromCharCode(65 + e.key);
+                    return '$letter. ${e.value.trim()}';
+                  }).join('   '),
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
+            if (card.attachments.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  '${card.attachments.length} tệp đính kèm',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
             Padding(
               padding: const EdgeInsets.only(top: 10),
               child: Text(

@@ -81,9 +81,15 @@ class GeneratedFlashcardCardWidget extends StatelessWidget {
                     key: Key("$index"),
                     onPressed: () {
                       context.read<CardsBloc>().add(AddFlashcardsEvent(
-                          collectionUuid: collectionUuid,
-                          question: flashcards[index].question,
-                          answer: flashcards[index].answer));
+                            collectionUuid: collectionUuid,
+                            question: flashcards[index].question,
+                            answer: flashcards[index].answer,
+                            choices: flashcards[index].choices,
+                            correctChoiceIndex:
+                                flashcards[index].correctChoiceIndex,
+                            attachments: flashcards[index].attachments,
+                            uuid: flashcards[index].uuid,
+                          ));
                       customSnackBar("Flashcard Was Added", context);
                     },
                     icon: const Icon(Icons.add))

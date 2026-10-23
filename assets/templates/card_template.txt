@@ -1,0 +1,40 @@
+QuizWiz — MẪU ĐỊNH DẠNG COLLECTION VÀ CARD
+Phiên bản định dạng: {{COLLECTION_FORMAT_VERSION}}
+
+HƯỚNG DẪN
+- File collection.json là một JSON object UTF-8, không bọc trong Markdown code fence.
+- Mỗi card có question; answer là câu trả lời Writing riêng và được phép để trống. Card nhóm dùng children để chứa nhiều câu hỏi con.
+- note là ghi chú tùy chọn cho đáp án nghe, nội dung hội thoại hoặc giải thích; chỉ hiện sau khi lật thẻ hoặc đã kiểm tra đáp án. Card nhóm có thể ghi note chung ở card cha và note riêng cho từng câu hỏi con.
+- tags là mảng chuỗi tùy chọn để gắn nhãn cho từng card, ví dụ ["Unit1", "Listening", "Part1"]. Dùng tags: [] khi card không có nhãn; trên card nhóm nên gắn tag ở card cha để lọc nhóm trong danh sách collection.
+- Card cha có thể đặt nội dung bài và attachments chung; mỗi card con có question, answer, choices, correctChoiceIndex và attachments riêng. Câu hỏi con kế thừa media của cha khi attachments riêng để trống.
+- choices là các ô lựa chọn theo đúng vị trí A, B, C...; phải giữ cả chuỗi rỗng để bảo toàn vị trí. Ví dụ ["A", "", "C", ""] nghĩa là A, B, C, D, trong đó B và D đang để trống.
+- correctChoiceIndex đếm từ 0 và xác định ô Multiple Choice đúng. Không tự sắp xếp hoặc xóa ô trống.
+- Khi answer có nội dung và ô đúng trong choices đang trống, ứng dụng dùng answer làm đáp án đúng trong Multiple Choice và điền lựa chọn gây nhiễu từ các card khác nếu có. Khi ô đúng đã có nội dung, Multiple Choice vẫn chấm theo correctChoiceIndex; Writing chấm theo answer.
+- Khi answer để trống nhưng ô đúng trong choices có nội dung, Writing quiz yêu cầu nhập chính xác nội dung ô đó (không phân biệt hoa thường). Nếu ô đúng cũng trống, Writing quiz yêu cầu nhập chữ cái A-H (không phân biệt hoa thường). Nếu choices cũng trống, vẫn tạo các ô A-D bằng choices: ["", "", "", ""].
+- note là chuỗi tùy chọn; dùng "" nếu không cần ghi chú. Không thay thế answer bằng note.
+- Card không cần trắc nghiệm có thể dùng choices: [] và correctChoiceIndex: 0; ứng dụng coi đây là bốn ô trống mặc định khi vào quiz.
+- attachments luôn là mảng. Không tự tạo tệp media giả. Nếu có ảnh/audio/video thật, chép tệp vào ZIP theo đường dẫn attachments/<source>.
+- CardAttachment.type nhận một trong các giá trị: {{ATTACHMENT_TYPES}}. source là đường dẫn tương đối hoặc URL; isRemote=true cho URL.
+- playLimit=0 nghĩa là phát không giới hạn; số dương là số lần phát tối đa.
+- uuid của Collection và từng Card phải duy nhất. Có thể dùng UUID mới hoặc giá trị duy nhất dạng chuỗi.
+- dueTime là Unix epoch milliseconds; card mới có thể dùng 0. interval tính theo ngày, factor thường là 2.5, repetitions thường là 0.
+- children luôn là mảng. Dùng children: [] cho card đơn; card có children sẽ được ôn và làm quiz như một nhóm trong cùng một lượt. Với quiz, người học trả lời tất cả câu hỏi con trước khi chuyển sang card tiếp theo.
+
+CẤU TRÚC COLLECTION.JSON
+Ví dụ bên dưới được tạo từ chính các hàm toJson() hiện tại của ứng dụng. Khi cấu trúc model thay đổi, ví dụ này tự cập nhật khi ứng dụng xuất TXT/ZIP hoặc gửi yêu cầu cho AI.
+
+{{GENERATED_SCHEMA_EXAMPLES}}
+
+CẤU TRÚC ZIP COLLECTION
+- collection.json — object Collection như ví dụ trên.
+- attachments/<source> — tệp đính kèm cục bộ; phần <source> phải khớp chính xác với attachments[].source.
+- Tệp media có thể bỏ qua nếu card không có tệp đính kèm.
+
+NHẬP NHIỀU COLLECTION
+- Có thể tạo một file ZIP tổng chứa nhiều file ZIP collection bên trong.
+- Mỗi file ZIP bên trong phải có collection.json ở thư mục gốc hoặc trong thư mục con.
+- Có thể đặt tên các file ZIP theo tên collection; ứng dụng sẽ tạo UUID mới khi nhập.
+- Giữ nguyên file ZIP collection riêng lẻ nếu chỉ nhập một collection.
+
+AI TẠO CARD
+Người dùng có thể gửi một câu lệnh riêng cùng tối đa 5 tệp đính kèm. Ưu tiên làm theo câu lệnh đó trong phạm vi tài liệu nguồn; nếu không có câu lệnh thì tạo card hữu ích dựa trên tài liệu. Hãy đọc tất cả nguồn được gửi, tạo nội dung chính xác và trả về một JSON object Collection theo ví dụ. Có thể tạo card nhóm với children cho listening/video/reading có nhiều câu hỏi; đặt media chung trên card cha, và câu hỏi cùng đáp án riêng trong từng child. Gắn các nhãn ngắn, hữu ích vào mảng tags, ví dụ chủ đề, Unit và dạng bài; nếu không phù hợp thì dùng tags: []. answer là đáp án Writing độc lập, có thể để trống; choices là các ô trắc nghiệm giữ nguyên thứ tự và cả vị trí trống; correctChoiceIndex là vị trí đúng, đếm từ 0. note là ghi chú giải thích, đáp án nghe hoặc ngữ cảnh hội thoại nếu tài liệu có thông tin phù hợp; nếu không có thì dùng "". Không chép answer đè lên choices và không xóa ô trống. Khi answer trống và ô đúng có nội dung, Writing nhận đúng nội dung ô đó; khi ô đúng cũng trống, Writing nhận chữ cái tương ứng A-H. Không xuất Markdown, không tự bịa đường dẫn hoặc tệp đính kèm. Nếu không có media thật trong nguồn thì dùng attachments: [].

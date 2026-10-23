@@ -8,11 +8,11 @@ import 'package:quizwiz/src/features/cards/data/data.dart';
 class CustomFocusedMenuHolder extends StatelessWidget {
   final Widget child;
   final FlashcardCollection collection;
-  final int index;
+  final Flashcard card;
   const CustomFocusedMenuHolder({
     Key? key,
     required this.collection,
-    required this.index,
+    required this.card,
     required this.child,
   }) : super(key: key);
 
@@ -30,19 +30,22 @@ class CustomFocusedMenuHolder extends StatelessWidget {
               ),
               onPressed: () {
                 context.read<CardsBloc>().add(RemoveFlashcardsEvent(
-                    collection: collection,
-                    flashcardUuid: collection.cards[index].uuid));
+                    collection: collection, flashcardUuid: card.uuid));
               }),
           FocusedMenuItem(
               backgroundColor: Theme.of(context).cardColor,
               title: const Text(AppStrings.edit),
               onPressed: () {
-                Navigator.of(context).pushReplacementNamed(Routes.editFlashcard,
+                Navigator.of(context).pushNamed(Routes.editFlashcard,
                     arguments: EditFlashcardParameters(
-                        question: collection.cards[index].question,
-                        answer: collection.cards[index].answer,
+                        question: card.question,
+                        answer: card.answer,
+                        note: card.note,
                         collection: collection,
-                        flashcard: collection.cards[index]));
+                        flashcard: card,
+                        choices: card.choices,
+                        correctChoiceIndex: card.correctChoiceIndex,
+                        attachments: card.attachments));
               })
         ],
         child: child);

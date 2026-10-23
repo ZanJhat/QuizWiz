@@ -4,7 +4,8 @@ import '../../../../tests_imports.dart';
 void main() {
   late Widget quizScreen;
   final flashcards = [
-    Flashcard(question: "question 1", answer: "answer 1", uuid: "1"),
+    Flashcard(
+        question: "question 1", answer: "answer 1", note: "note 1", uuid: "1"),
     Flashcard(question: "question 2", answer: "answer 2", uuid: "2"),
   ];
   setUp(() {
@@ -24,6 +25,16 @@ void main() {
           "");
       expect(find.byType(ElevatedButton), findsNothing);
       expect(find.text(flashcards[0].answer), findsNothing);
+      expect(find.text('note 1'), findsNothing);
+    });
+    testWidgets('shows a card note only after checking the answer',
+        (tester) async {
+      await tester.pumpWidget(quizScreen);
+      expect(find.text('note 1'), findsNothing);
+
+      await tester.tap(find.text('Kiểm tra đáp án'));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.text('note 1'), findsOneWidget);
     });
     testWidgets('''When filling out a [TextFormField] and tapping done,
      expect two [Text] and an [ElevatedButton]''', (tester) async {

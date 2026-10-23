@@ -4,7 +4,6 @@ import 'package:quizwiz/src/core/core.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:quizwiz/src/features/cards/controller/controller.dart';
 import 'src/features/cards/data/data.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 Future<void> main() async {
   await _initialize();
@@ -20,8 +19,7 @@ Future<void> _openIsarBox() async {
 }
 
 Future<void> _initialize() async {
-  await dotenv.load(fileName: ".env");
-  ServiceLocator().init();
   WidgetsFlutterBinding.ensureInitialized();
+  ServiceLocator().init();
   await _openIsarBox();
 }

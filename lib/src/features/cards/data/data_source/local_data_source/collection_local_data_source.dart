@@ -16,6 +16,8 @@ abstract class CollectionLocalDataSource {
       }) collection);
   Future<Unit> combineCollections(FlashcardCollection mainCollection,
       FlashcardCollection secondaryCollection);
+  Future<Unit> importCollection(FlashcardCollection collection);
+  Future<Unit> importCollections(List<FlashcardCollection> collections);
 }
 
 class IsarCollectionDataSource implements CollectionLocalDataSource {
@@ -80,6 +82,26 @@ class IsarCollectionDataSource implements CollectionLocalDataSource {
     await _instance.writeTxn(() async {
       await _instance.flashcardCollections
           .put(mainCollection.copyWith(cards: newCardList));
+    });
+    return unit;
+  }
+
+  @override
+  Future<Unit> importCollection(FlashcardCollection collection) async {
+    await _instance.writeTxn(() async {
+      await _instance.flashcardCollections.put(collection).onError(
+          (error, stackTrace) =>
+              throw LocalStorageException(message: error.toString()));
+    });
+    return unit;
+  }
+
+  @override
+  Future<Unit> importCollections(List<FlashcardCollection> collections) async {
+    await _instance.writeTxn(() async {
+      await _instance.flashcardCollections.putAll(collections).onError(
+          (error, stackTrace) =>
+              throw LocalStorageException(message: error.toString()));
     });
     return unit;
   }

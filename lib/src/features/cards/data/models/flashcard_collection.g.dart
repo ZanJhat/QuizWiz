@@ -61,7 +61,10 @@ const FlashcardCollectionSchema = CollectionSchema(
     )
   },
   links: {},
-  embeddedSchemas: {r'Flashcard': FlashcardSchema},
+  embeddedSchemas: {
+    r'Flashcard': FlashcardSchema,
+    r'CardAttachment': CardAttachmentSchema,
+  },
   getId: _flashcardCollectionGetId,
   getLinks: _flashcardCollectionGetLinks,
   attach: _flashcardCollectionAttach,
@@ -1086,45 +1089,116 @@ extension FlashcardCollectionQueryProperty
 // coverage:ignore-file
 // ignore_for_file: duplicate_ignore, non_constant_identifier_names, constant_identifier_names, invalid_use_of_protected_member, unnecessary_cast, prefer_const_constructors, lines_longer_than_80_chars, require_trailing_commas, inference_failure_on_function_invocation, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_checks, join_return_with_assignment, prefer_final_locals, avoid_js_rounded_ints, avoid_positional_boolean_parameters, always_specify_types
 
+const CardAttachmentSchema = Schema(
+  name: r'CardAttachment',
+  id: -621436608144178954,
+  properties: {
+    r'fileName':
+        PropertySchema(id: 0, name: r'fileName', type: IsarType.string),
+    r'isRemote': PropertySchema(id: 1, name: r'isRemote', type: IsarType.bool),
+    r'playLimit':
+        PropertySchema(id: 2, name: r'playLimit', type: IsarType.long),
+    r'source': PropertySchema(id: 3, name: r'source', type: IsarType.string),
+    r'type': PropertySchema(id: 4, name: r'type', type: IsarType.string)
+  },
+  estimateSize: _cardAttachmentEstimateSize,
+  serialize: _cardAttachmentSerialize,
+  deserialize: _cardAttachmentDeserialize,
+  deserializeProp: _cardAttachmentDeserializeProp,
+);
+
+int _cardAttachmentEstimateSize(
+  CardAttachment object,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  var bytesCount = offsets.last;
+  bytesCount += 3 + object.fileName.length * 3;
+  bytesCount += 3 + object.source.length * 3;
+  bytesCount += 3 + object.type.length * 3;
+  return bytesCount;
+}
+
+void _cardAttachmentSerialize(
+  CardAttachment object,
+  IsarWriter writer,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  writer.writeString(offsets[0], object.fileName);
+  writer.writeBool(offsets[1], object.isRemote);
+  writer.writeLong(offsets[2], object.playLimit);
+  writer.writeString(offsets[3], object.source);
+  writer.writeString(offsets[4], object.type);
+}
+
+CardAttachment _cardAttachmentDeserialize(
+  Id id,
+  IsarReader reader,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  return CardAttachment(
+    fileName: reader.readStringOrNull(offsets[0]) ?? '',
+    isRemote: reader.readBoolOrNull(offsets[1]) ?? false,
+    playLimit: reader.readLongOrNull(offsets[2]) ?? 0,
+    source: reader.readStringOrNull(offsets[3]) ?? '',
+    type: reader.readStringOrNull(offsets[4]) ?? 'image',
+  );
+}
+
+P _cardAttachmentDeserializeProp<P>(
+  IsarReader reader,
+  int propertyId,
+  int offset,
+  Map<Type, List<int>> allOffsets,
+) {
+  switch (propertyId) {
+    case 0:
+      return (reader.readStringOrNull(offset) ?? '') as P;
+    case 1:
+      return (reader.readBoolOrNull(offset) ?? false) as P;
+    case 2:
+      return (reader.readLongOrNull(offset) ?? 0) as P;
+    case 3:
+      return (reader.readStringOrNull(offset) ?? '') as P;
+    case 4:
+      return (reader.readStringOrNull(offset) ?? 'image') as P;
+    default:
+      throw IsarError('Unknown property with id $propertyId');
+  }
+}
+
 const FlashcardSchema = Schema(
   name: r'Flashcard',
   id: -5712857134961670327,
   properties: {
-    r'answer': PropertySchema(
-      id: 0,
-      name: r'answer',
-      type: IsarType.string,
-    ),
-    r'dueTime': PropertySchema(
-      id: 1,
-      name: r'dueTime',
-      type: IsarType.long,
-    ),
-    r'factor': PropertySchema(
-      id: 2,
-      name: r'factor',
-      type: IsarType.double,
-    ),
-    r'interval': PropertySchema(
-      id: 3,
-      name: r'interval',
-      type: IsarType.double,
-    ),
-    r'question': PropertySchema(
-      id: 4,
-      name: r'question',
-      type: IsarType.string,
-    ),
-    r'repetitions': PropertySchema(
-      id: 5,
-      name: r'repetitions',
-      type: IsarType.long,
-    ),
-    r'uuid': PropertySchema(
-      id: 6,
-      name: r'uuid',
-      type: IsarType.string,
-    )
+    r'answer': PropertySchema(id: 0, name: r'answer', type: IsarType.string),
+    r'attachments': PropertySchema(
+        id: 1,
+        name: r'attachments',
+        type: IsarType.objectList,
+        target: r'CardAttachment'),
+    r'children': PropertySchema(
+        id: 2,
+        name: r'children',
+        type: IsarType.objectList,
+        target: r'Flashcard'),
+    r'choices':
+        PropertySchema(id: 3, name: r'choices', type: IsarType.stringList),
+    r'correctChoiceIndex':
+        PropertySchema(id: 4, name: r'correctChoiceIndex', type: IsarType.long),
+    r'dueTime': PropertySchema(id: 5, name: r'dueTime', type: IsarType.long),
+    r'factor': PropertySchema(id: 6, name: r'factor', type: IsarType.double),
+    r'interval':
+        PropertySchema(id: 7, name: r'interval', type: IsarType.double),
+    r'note': PropertySchema(id: 8, name: r'note', type: IsarType.string),
+    r'question':
+        PropertySchema(id: 9, name: r'question', type: IsarType.string),
+    r'repetitions':
+        PropertySchema(id: 10, name: r'repetitions', type: IsarType.long),
+    r'tags': PropertySchema(id: 11, name: r'tags', type: IsarType.stringList),
+    r'uuid': PropertySchema(id: 12, name: r'uuid', type: IsarType.string)
   },
   estimateSize: _flashcardEstimateSize,
   serialize: _flashcardSerialize,
@@ -1139,6 +1213,38 @@ int _flashcardEstimateSize(
 ) {
   var bytesCount = offsets.last;
   bytesCount += 3 + object.answer.length * 3;
+  bytesCount += 3 + object.attachments.length * 3;
+  {
+    final offsets = allOffsets[CardAttachment]!;
+    for (var i = 0; i < object.attachments.length; i++) {
+      final value = object.attachments[i];
+      bytesCount +=
+          CardAttachmentSchema.estimateSize(value, offsets, allOffsets);
+    }
+  }
+  bytesCount += 3 + object.children.length * 3;
+  {
+    final offsets = allOffsets[Flashcard]!;
+    for (var i = 0; i < object.children.length; i++) {
+      bytesCount +=
+          FlashcardSchema.estimateSize(object.children[i], offsets, allOffsets);
+    }
+  }
+  bytesCount += 3 + object.choices.length * 3;
+  {
+    for (var i = 0; i < object.choices.length; i++) {
+      final value = object.choices[i];
+      bytesCount += value.length * 3;
+    }
+  }
+  bytesCount += 3 + object.note.length * 3;
+  bytesCount += 3 + object.tags.length * 3;
+  {
+    for (var i = 0; i < object.tags.length; i++) {
+      final value = object.tags[i];
+      bytesCount += value.length * 3;
+    }
+  }
   bytesCount += 3 + object.question.length * 3;
   bytesCount += 3 + object.uuid.length * 3;
   return bytesCount;
@@ -1151,12 +1257,20 @@ void _flashcardSerialize(
   Map<Type, List<int>> allOffsets,
 ) {
   writer.writeString(offsets[0], object.answer);
-  writer.writeLong(offsets[1], object.dueTime);
-  writer.writeDouble(offsets[2], object.factor);
-  writer.writeDouble(offsets[3], object.interval);
-  writer.writeString(offsets[4], object.question);
-  writer.writeLong(offsets[5], object.repetitions);
-  writer.writeString(offsets[6], object.uuid);
+  writer.writeObjectList<CardAttachment>(offsets[1], allOffsets,
+      CardAttachmentSchema.serialize, object.attachments);
+  writer.writeObjectList<Flashcard>(
+      offsets[2], allOffsets, FlashcardSchema.serialize, object.children);
+  writer.writeStringList(offsets[3], object.choices);
+  writer.writeLong(offsets[4], object.correctChoiceIndex);
+  writer.writeLong(offsets[5], object.dueTime);
+  writer.writeDouble(offsets[6], object.factor);
+  writer.writeDouble(offsets[7], object.interval);
+  writer.writeString(offsets[8], object.note);
+  writer.writeString(offsets[9], object.question);
+  writer.writeLong(offsets[10], object.repetitions);
+  writer.writeStringList(offsets[11], object.tags);
+  writer.writeString(offsets[12], object.uuid);
 }
 
 Flashcard _flashcardDeserialize(
@@ -1165,16 +1279,25 @@ Flashcard _flashcardDeserialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  final object = Flashcard(
+  return Flashcard(
     answer: reader.readStringOrNull(offsets[0]) ?? '',
-    dueTime: reader.readLongOrNull(offsets[1]) ?? 0,
-    factor: reader.readDoubleOrNull(offsets[2]) ?? 2.5,
-    interval: reader.readDoubleOrNull(offsets[3]) ?? 1.0,
-    question: reader.readStringOrNull(offsets[4]) ?? '',
-    repetitions: reader.readLongOrNull(offsets[5]) ?? 0,
-    uuid: reader.readStringOrNull(offsets[6]) ?? '',
+    attachments: reader.readObjectList<CardAttachment>(offsets[1],
+            CardAttachmentSchema.deserialize, allOffsets, CardAttachment()) ??
+        const [],
+    children: reader.readObjectList<Flashcard>(
+            offsets[2], FlashcardSchema.deserialize, allOffsets, Flashcard()) ??
+        const [],
+    choices: reader.readStringList(offsets[3]) ?? const [],
+    correctChoiceIndex: reader.readLongOrNull(offsets[4]) ?? 0,
+    dueTime: reader.readLongOrNull(offsets[5]) ?? 0,
+    factor: reader.readDoubleOrNull(offsets[6]) ?? 2.5,
+    interval: reader.readDoubleOrNull(offsets[7]) ?? 1.0,
+    note: reader.readStringOrNull(offsets[8]) ?? '',
+    question: reader.readStringOrNull(offsets[9]) ?? '',
+    repetitions: reader.readLongOrNull(offsets[10]) ?? 0,
+    tags: reader.readStringList(offsets[11]) ?? const [],
+    uuid: reader.readStringOrNull(offsets[12]) ?? '',
   );
-  return object;
 }
 
 P _flashcardDeserializeProp<P>(
@@ -1187,16 +1310,32 @@ P _flashcardDeserializeProp<P>(
     case 0:
       return (reader.readStringOrNull(offset) ?? '') as P;
     case 1:
-      return (reader.readLongOrNull(offset) ?? 0) as P;
+      return (reader.readObjectList<CardAttachment>(offset,
+              CardAttachmentSchema.deserialize, allOffsets, CardAttachment()) ??
+          const []) as P;
     case 2:
-      return (reader.readDoubleOrNull(offset) ?? 2.5) as P;
+      return (reader.readObjectList<Flashcard>(
+              offset, FlashcardSchema.deserialize, allOffsets, Flashcard()) ??
+          const []) as P;
     case 3:
-      return (reader.readDoubleOrNull(offset) ?? 1.0) as P;
+      return (reader.readStringList(offset) ?? const []) as P;
     case 4:
-      return (reader.readStringOrNull(offset) ?? '') as P;
+      return (reader.readLongOrNull(offset) ?? 0) as P;
     case 5:
       return (reader.readLongOrNull(offset) ?? 0) as P;
     case 6:
+      return (reader.readDoubleOrNull(offset) ?? 2.5) as P;
+    case 7:
+      return (reader.readDoubleOrNull(offset) ?? 1.0) as P;
+    case 8:
+      return (reader.readStringOrNull(offset) ?? '') as P;
+    case 9:
+      return (reader.readStringOrNull(offset) ?? '') as P;
+    case 10:
+      return (reader.readLongOrNull(offset) ?? 0) as P;
+    case 11:
+      return (reader.readStringList(offset) ?? const []) as P;
+    case 12:
       return (reader.readStringOrNull(offset) ?? '') as P;
     default:
       throw IsarError('Unknown property with id $propertyId');

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:quizwiz/src/core/core.dart';
 import 'package:quizwiz/src/features/cards/controller/controller.dart';
 import 'package:quizwiz/src/features/cards/data/data.dart';
+import 'package:quizwiz/src/features/cards/presentation/widgets/practice_cards_widgets/choose_order_dialog.dart';
 
 class ChooseQuizDialog extends StatelessWidget {
   final FlashcardCollection collection;
@@ -10,6 +11,10 @@ class ChooseQuizDialog extends StatelessWidget {
     Key? key,
     required this.collection,
   }) : super(key: key);
+
+  bool get _canTakeMcq {
+    return collection.cards.isNotEmpty;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,26 +28,46 @@ class ChooseQuizDialog extends StatelessWidget {
             CustomListTile(
                 text: AppStrings.multipleChoice,
                 icon: Icons.quiz,
-                onPressed: () {
-                  if (collection.cards.length < 4) {
-                    customSnackBar("Add At Least 4 Flashcards", context);
-                    Navigator.of(context).pushReplacementNamed('/');
-                  } else {
-                    context.read<CardsBloc>().add(
-                        GetMultipleQuizOptionsEvent(collection: collection));
-                    Navigator.of(context).pushNamed(
-                      Routes.quiz,
-                    );
+                onPressed: () async {
+                  if (!_canTakeMcq) {
+                    customSnackBar("Collection chưa có card nào", context);
+                    Navigator.of(context).pop();
+                    return;
                   }
+                  final shuffle = await showDialog<bool>(
+                    context: context,
+                    builder: (_) => const ChooseOrderDialog(),
+                  );
+                  if (shuffle == null || !context.mounted) return;
+                  final navigator = Navigator.of(context);
+                  final cardsBloc = context.read<CardsBloc>();
+                  navigator.pop();
+                  cardsBloc.add(GetMultipleQuizOptionsEvent(
+                    collection: collection,
+                    shuffle: shuffle,
+                  ));
+                  navigator.pushNamed(
+                    Routes.quiz,
+                    arguments:
+                        QuizArgs(collection: collection, shuffle: shuffle),
+                  );
                 }),
             CustomListTile(
                 text: AppStrings.writingQuiz,
                 icon: Icons.edit,
-                onPressed: () {
-                  var shuffledCards = [...collection.cards];
-                  shuffledCards.shuffle();
-                  Navigator.of(context)
-                      .pushNamed(Routes.writingQuiz, arguments: shuffledCards);
+                onPressed: () async {
+                  final shuffle = await showDialog<bool>(
+                    context: context,
+                    builder: (_) => const ChooseOrderDialog(),
+                  );
+                  if (shuffle == null || !context.mounted) return;
+                  final navigator = Navigator.of(context);
+                  navigator.pop();
+                  navigator.pushNamed(
+                    Routes.writingQuiz,
+                    arguments:
+                        QuizArgs(collection: collection, shuffle: shuffle),
+                  );
                 }),
           ],
         )

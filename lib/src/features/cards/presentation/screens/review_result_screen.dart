@@ -3,15 +3,32 @@ import 'package:quizwiz/src/core/core.dart';
 import 'package:quizwiz/src/features/cards/controller/controller.dart';
 import 'package:quizwiz/src/features/cards/data/data.dart';
 import 'package:quizwiz/src/features/cards/presentation/presentation.dart';
+import 'package:quizwiz/src/features/cards/presentation/widgets/attachments/card_attachments_view.dart';
 
-class ReviewResultScreen extends StatelessWidget {
+class ReviewResultScreen extends StatefulWidget {
   final (Flashcard card, FlashcardCollection collection) cardAndCollection;
   const ReviewResultScreen({super.key, required this.cardAndCollection});
 
   @override
+  State<ReviewResultScreen> createState() => _ReviewResultScreenState();
+}
+
+class _ReviewResultScreenState extends State<ReviewResultScreen> {
+  bool _saving = false;
+
+  @override
   Widget build(BuildContext context) {
+    final card = widget.cardAndCollection.$1;
     return Scaffold(
-      appBar: AppBar(),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leadingWidth: 104,
+        leading: TextButton.icon(
+          onPressed: () => _addReview(ReviewResult.again),
+          icon: const Icon(Icons.replay, size: 18),
+          label: const Text('Again'),
+        ),
+      ),
       body: LayoutBuilder(builder: (context, size) {
         return Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -20,23 +37,25 @@ class ReviewResultScreen extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
               child: ConstrainedBox(
-                constraints: BoxConstraints(maxHeight: size.maxHeight / 4),
+                constraints: BoxConstraints(maxHeight: size.maxHeight / 5),
                 child: AutoSizeText(
-                  cardAndCollection.$1.question,
+                  card.question,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.displaySmall,
                 ),
               ),
             ),
-            const SizedBox(
-              height: 20,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: CardAttachmentsView(attachments: card.attachments),
             ),
+            const SizedBox(height: 20),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
               child: ConstrainedBox(
                 constraints: BoxConstraints(maxHeight: size.maxHeight / 3.5),
                 child: AutoSizeText(
-                  cardAndCollection.$1.answer,
+                  card.writingQuizAnswer,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.headlineMedium,
                 ),
@@ -47,19 +66,19 @@ class ReviewResultScreen extends StatelessWidget {
               children: [
                 ReviewBar(
                     color: Colors.red,
-                    onTap: () => _addReview(context, ReviewResult.again),
+                    onTap: () => _addReview(ReviewResult.again),
                     text: "Again"),
                 ReviewBar(
                     color: Colors.redAccent,
-                    onTap: () => _addReview(context, ReviewResult.hard),
+                    onTap: () => _addReview(ReviewResult.hard),
                     text: "Hard"),
                 ReviewBar(
                     color: Colors.green,
-                    onTap: () => _addReview(context, ReviewResult.good),
+                    onTap: () => _addReview(ReviewResult.good),
                     text: "Good"),
                 ReviewBar(
                     color: Colors.blue,
-                    onTap: () => _addReview(context, ReviewResult.easy),
+                    onTap: () => _addReview(ReviewResult.easy),
                     text: "Easy"),
               ],
             ),
@@ -72,15 +91,29 @@ class ReviewResultScreen extends StatelessWidget {
     );
   }
 
-  void _addReview(BuildContext buildContext, ReviewResult result) {
-    buildContext.read<CardsBloc>()
-      ..add(UpdateDueTimeEvent(
-          card: cardAndCollection.$1,
-          collectionUuid: cardAndCollection.$2.uuid,
-          reviewResult: result))
-      ..add(GetDueReviewsEvent(collection: cardAndCollection.$2));
-
-    Navigator.of(buildContext).pushReplacementNamed(Routes.practiceCards,
-        arguments: cardAndCollection.$2);
+  Future<void> _addReview(ReviewResult result) async {
+    if (_saving) return;
+    setState(() => _saving = true);
+    final card = widget.cardAndCollection.$1;
+    final collection = widget.cardAndCollection.$2;
+    try {
+      if (result == ReviewResult.again) {
+        await DailyReviewStore.markAgain(
+          collectionUuid: collection.uuid,
+          cardUuid: card.uuid,
+        );
+      } else {
+        await DailyReviewStore.markReviewed(
+          collectionUuid: collection.uuid,
+          cardUuid: card.uuid,
+        );
+      }
+    } catch (_) {
+      // Continue scheduling the card if local history storage is unavailable.
+    }
+    if (!mounted) return;
+    context.read<CardsBloc>().add(UpdateDueTimeEvent(
+        card: card, collectionUuid: collection.uuid, reviewResult: result));
+    Navigator.of(context).pop(result);
   }
 }

@@ -24,7 +24,9 @@ class AnswerFormField extends StatelessWidget {
         textInputAction: TextInputAction.done,
         onFieldSubmitted: onSubmit,
         autofocus: true,
-        decoration: const InputDecoration(labelText: "Definition / Answer"),
+        decoration: const InputDecoration(
+          labelText: "Answer, option text, or letter (A–H)",
+        ),
       ),
     );
   }

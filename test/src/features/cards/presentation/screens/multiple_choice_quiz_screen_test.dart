@@ -35,6 +35,31 @@ void main() {
     );
   });
   group("Test multiple_choice_quiz_screen", () {
+    testWidgets('shows a card note only after selecting an answer',
+        (tester) async {
+      final quiz = MultipleChoiceQuiz(
+        question: 'Question with note',
+        options: const ['Answer'],
+        rightAnswer: 'Answer',
+        card: Flashcard(note: 'Quiz note'),
+      );
+      whenListen(
+        mockBloc,
+        const Stream<CardsState>.empty(),
+        initialState: CardsState(
+          quizRequestState: RequestState.success,
+          multipleChoices: [quiz],
+        ),
+      );
+      await tester.pumpWidget(multipleChoiceScreen);
+      await tester.pump();
+      expect(find.text('Quiz note'), findsNothing);
+
+      await tester.tap(find.text('Answer'));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.text('Quiz note'), findsOneWidget);
+    });
+
     testWidgets("When [quizRequestState] is loading, expect [LoadingWidget]",
         (tester) async {
       whenListen(mockBloc, const Stream<CardsState>.empty(),
@@ -76,15 +101,19 @@ void main() {
       expect(find.byType(Text), findsNWidgets(6));
     });
 
-    testWidgets('''When [quizRequestState] is success and tapping an option,
-         expect to navigate to the next question''', (tester) async {
+    testWidgets('''A single-card answer waits for manual next''',
+        (tester) async {
       whenListen(mockBloc, const Stream<CardsState>.empty(),
           initialState: CardsState(
               quizRequestState: RequestState.success,
               multipleChoices: quizzes));
       await tester.pumpWidget(multipleChoiceScreen);
       await tester.tap(find.text(quizzes[0].rightAnswer));
-      await tester.pump(const Duration(milliseconds: 2000));
+      await tester.pump(const Duration(seconds: 2));
+      expect(find.text(quizzes[0].question), findsOneWidget);
+      expect(find.text('Card tiếp theo'), findsOneWidget);
+
+      await tester.tap(find.text('Card tiếp theo'));
       await tester.pumpAndSettle();
       expect(find.text(quizzes[1].question), findsOneWidget);
       expect(find.widgetWithText(Container, quizzes[1].rightAnswer),
@@ -113,8 +142,6 @@ void main() {
       final containerAfterTapping = tester.widget<Container>(
           find.widgetWithText(Container, quizzes[0].rightAnswer));
       expect(containerAfterTapping.color, Colors.green);
-      await tester.pump(const Duration(milliseconds: 1500));
-      await tester.pumpAndSettle();
     });
 
     testWidgets(
@@ -139,8 +166,6 @@ void main() {
       final containerAfterTapping = tester.widget<Container>(
           find.widgetWithText(Container, quizzes[0].rightAnswer));
       expect(containerAfterTapping.color, Colors.green);
-      await tester.pump(const Duration(milliseconds: 1500));
-      await tester.pumpAndSettle();
     });
 
     testWidgets('''When tapping an option, and the question is the last one,
@@ -153,25 +178,29 @@ void main() {
       //first question
       expect(find.text(quizzes[0].question), findsOneWidget);
       await tester.tap(find.text(quizzes[0].options[1]));
-      await tester.pump(const Duration(milliseconds: 2000));
+      await tester.pump();
+      await tester.tap(find.text('Card tiếp theo'));
       await tester.pumpAndSettle();
 
       //second question
       expect(find.text(quizzes[1].question), findsOneWidget);
       await tester.tap(find.text(quizzes[1].options[1]));
-      await tester.pump(const Duration(milliseconds: 2000));
+      await tester.pump();
+      await tester.tap(find.text('Card tiếp theo'));
       await tester.pumpAndSettle();
 
       //third question
       expect(find.text(quizzes[2].question), findsOneWidget);
       await tester.tap(find.text(quizzes[2].options[1]));
-      await tester.pump(const Duration(milliseconds: 2000));
+      await tester.pump();
+      await tester.tap(find.text('Card tiếp theo'));
       await tester.pumpAndSettle();
 
       //last question
       expect(find.text(quizzes[3].question), findsOneWidget);
       await tester.tap(find.text(quizzes[3].options[2]));
-      await tester.pump(const Duration(milliseconds: 3000));
+      await tester.pump();
+      await tester.tap(find.text('Card tiếp theo'));
       await tester.pumpAndSettle();
       //expect(find.byType(HomeScreen), findsWidgets);
     });

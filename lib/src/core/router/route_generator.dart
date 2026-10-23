@@ -22,10 +22,17 @@ class RouteGenerator {
               FlashcardsListScreen(collectionUuid: collectionUuid),
         );
       case Routes.practiceCards:
-        var collection = settings.arguments as FlashcardCollection;
+        final args = settings.arguments;
+        if (args is PracticeArgs) {
+          return MaterialPageRoute(
+            builder: (context) => PracticeCardsScreen(
+              collection: args.collection,
+            ),
+          );
+        }
         return MaterialPageRoute(
           builder: (context) => PracticeCardsScreen(
-            collection: collection,
+            collection: args as FlashcardCollection,
           ),
         );
       case Routes.reviewResult:
@@ -45,18 +52,33 @@ class RouteGenerator {
                   parameters: parameters,
                 ));
       case Routes.quiz:
+        final args = settings.arguments;
         return MaterialPageRoute(
-            builder: (context) => const MultipleChoiceQuizScreen());
+            builder: (context) => MultipleChoiceQuizScreen(
+                  args: args is QuizArgs ? args : null,
+                ));
       case Routes.generatedFlashcards:
         var collectionUuid = settings.arguments as String;
         return MaterialPageRoute(
             builder: (context) =>
                 GeneratedFlashcardsScreen(collectionUuid: collectionUuid));
       case Routes.writingQuiz:
-        var flashcards = settings.arguments as List<Flashcard>;
+        final args = settings.arguments;
+        if (args is QuizArgs) {
+          final cards = [...args.collection.cards];
+          if (args.shuffle) cards.shuffle();
+          return MaterialPageRoute(
+            builder: (context) => WritingQuizScreen(
+              flashcards: cards,
+            ),
+          );
+        }
         return MaterialPageRoute(
-          builder: (context) => WritingQuizScreen(flashcards: flashcards),
+          builder: (context) =>
+              WritingQuizScreen(flashcards: args as List<Flashcard>),
         );
+      case Routes.settings:
+        return MaterialPageRoute(builder: (context) => const SettingsScreen());
       default:
         return MaterialPageRoute(
           builder: (context) => const CustomErrorWidget(),

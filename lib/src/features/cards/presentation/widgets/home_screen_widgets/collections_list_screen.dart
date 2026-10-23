@@ -7,6 +7,7 @@ import 'package:quizwiz/src/features/cards/data/data.dart';
 import 'package:quizwiz/src/features/cards/presentation/presentation.dart';
 import 'package:quizwiz/src/features/cards/presentation/widgets/home_screen_widgets/combine_collection_dialog.dart';
 import 'package:quizwiz/src/features/cards/presentation/widgets/home_screen_widgets/edit_collection_dialog.dart';
+import 'package:quizwiz/src/core/services/collection_zip_service.dart';
 
 class CollectionsListScreen extends StatelessWidget {
   final List<FlashcardCollection> collections;
@@ -45,6 +46,24 @@ class CollectionsListScreen extends StatelessWidget {
                       context: context,
                       builder: (context) => EditCollectionDialog(
                           collection: collections[index]))),
+              FocusedMenuItem(
+                  backgroundColor: Theme.of(context).cardColor,
+                  title: const Text('Xuất file zip'),
+                  onPressed: () async {
+                    try {
+                      final zip = await CollectionZipService.shareCollection(
+                          collections[index]);
+                      if (listViewContext.mounted) {
+                        customSnackBar(
+                            'Đã lưu ZIP tại: ${zip.path}', listViewContext);
+                      }
+                    } catch (e) {
+                      if (listViewContext.mounted) {
+                        customSnackBar(
+                            'Xuất zip thất bại: $e', listViewContext);
+                      }
+                    }
+                  }),
               FocusedMenuItem(
                   backgroundColor: Theme.of(context).cardColor,
                   title: const Text(

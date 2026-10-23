@@ -103,5 +103,37 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(ReviewResultScreen), findsOneWidget);
     });
+
+    testWidgets('shows a card note only after revealing the review card',
+        (tester) async {
+      whenListen(mockBloc, const Stream<CardsState>.empty(),
+          initialState: const CardsState());
+      await tester.pumpWidget(BlocProvider.value(
+        value: mockBloc,
+        child: MaterialApp(
+          home: PracticeCardsScreen(
+            collection: FlashcardCollection(
+              name: 'Collection',
+              uuid: 'collection',
+              cards: [
+                Flashcard(
+                  uuid: 'card',
+                  question: 'Review question',
+                  answer: 'Review answer',
+                  note: 'Review note',
+                  dueTime: 0,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ));
+      await tester.pumpAndSettle();
+      expect(find.text('Review note'), findsNothing);
+
+      await tester.tap(find.text('Review question'));
+      await tester.pumpAndSettle();
+      expect(find.text('Review note'), findsOneWidget);
+    });
   });
 }

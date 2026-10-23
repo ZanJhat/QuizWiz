@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:quizwiz/src/core/core.dart';
 import 'package:quizwiz/src/features/cards/controller/controller.dart';
 import 'package:quizwiz/src/features/cards/presentation/presentation.dart';
+import 'package:quizwiz/src/core/services/collection_zip_service.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -13,8 +16,14 @@ class HomeScreen extends StatelessWidget {
               title: const Text(AppStrings.homeScreen),
               actions: [
                 IconButton(
-                    onPressed: () => context.read<ThemeCubit>().toggleTheme(),
-                    icon: const Icon(Icons.dark_mode))
+                    tooltip: 'Nhập collection từ file ZIP (có thể nhập nhiều)',
+                    onPressed: () => _importZip(context),
+                    icon: const Icon(Icons.unarchive)),
+                IconButton(
+                    tooltip: 'Cài đặt',
+                    onPressed: () =>
+                        Navigator.of(context).pushNamed(Routes.settings),
+                    icon: const Icon(Icons.settings_outlined)),
               ],
             ),
             floatingActionButton: FloatingActionButton(
@@ -30,7 +39,7 @@ class HomeScreen extends StatelessWidget {
                     return const LoadingWidget();
                   case RequestState.error:
                     return CustomErrorWidget(
-                      errorMessage: state.flashcardErrorMessage,
+                      errorMessage: state.collectionsErrorMessage,
                     );
                   case RequestState.success:
                     return state.collections.isEmpty
@@ -40,5 +49,32 @@ class HomeScreen extends StatelessWidget {
                 }
               },
             )));
+  }
+}
+
+Future<void> _importZip(BuildContext context) async {
+  try {
+    final file = await CollectionZipService.pickZip();
+    if (file == null || !context.mounted) return;
+    final collections =
+        await CollectionZipService.importCollectionsFromZip(file);
+    if (!context.mounted) return;
+    final completer = Completer<void>();
+    context.read<CardsBloc>().add(
+          ImportCollectionsEvent(
+            collections: collections,
+            completer: completer,
+          ),
+        );
+    await completer.future;
+    if (!context.mounted) return;
+    customSnackBar(
+      'Đã nhập ${collections.length} collection từ file ZIP',
+      context,
+    );
+  } catch (error) {
+    if (context.mounted) {
+      customSnackBar('Nhập ZIP thất bại: $error', context);
+    }
   }
 }

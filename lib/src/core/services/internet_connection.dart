@@ -5,8 +5,9 @@ class InternetConnectivity {
   /// throwing [SocketException] (can't catch the exception)
   static Future<bool> isConnected() async {
     final connectivityResult = await Connectivity().checkConnectivity();
-    return connectivityResult == ConnectivityResult.mobile ||
-        connectivityResult == ConnectivityResult.wifi ||
-        connectivityResult == ConnectivityResult.vpn;
+    return connectivityResult.any((result) =>
+        result == ConnectivityResult.mobile ||
+        result == ConnectivityResult.wifi ||
+        result == ConnectivityResult.vpn);
   }
 }

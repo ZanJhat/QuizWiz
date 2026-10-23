@@ -7,23 +7,25 @@ import 'package:quizwiz/src/features/cards/presentation/widgets/practice_cards_w
 
 class NoFlashcardsToReview extends StatelessWidget {
   final FlashcardCollection collection;
+  final VoidCallback onAgain;
   const NoFlashcardsToReview({
     Key? key,
     required this.collection,
+    required this.onAgain,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: () async {
-        Navigator.of(context).pushReplacementNamed('/');
-        return true;
+        Navigator.of(context).popUntil((route) => route.isFirst);
+        return false;
       },
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const Expanded(child: SizedBox()),
-          LottieBuilder.asset(AppStrings.completedTaskAsset),
+          Expanded(child: LottieBuilder.asset(AppStrings.completedTaskAsset)),
           Text(
             AppStrings.noFlashcardsToReview,
             style: Theme.of(context).textTheme.displaySmall,
@@ -34,11 +36,10 @@ class NoFlashcardsToReview extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 30),
             child: Row(
               children: [
-                OutlinedButton(
-                    onPressed: () {
-                      Navigator.of(context).pushReplacementNamed('/');
-                    },
-                    child: const Text(AppStrings.goBack)),
+                OutlinedButton.icon(
+                    onPressed: onAgain,
+                    icon: const Icon(Icons.replay),
+                    label: const Text('Again')),
                 const Expanded(child: SizedBox()),
                 FilledButton.icon(
                     onPressed: () => showDialog(

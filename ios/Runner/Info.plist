@@ -47,5 +47,15 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>QuizWiz cần truy cập thư viện để đính kèm ảnh, video hoặc audio vào thẻ học.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>QuizWiz cần quyền lưu tệp đính kèm và xuất collection.</string>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>https</string>
+		<string>http</string>
+		<string>youtube</string>
+	</array>
 </dict>
 </plist>

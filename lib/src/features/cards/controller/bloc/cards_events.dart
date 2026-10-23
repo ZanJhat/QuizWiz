@@ -1,5 +1,6 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:io';
+import 'dart:async';
 
 import 'package:equatable/equatable.dart';
 import 'package:quizwiz/src/core/core.dart';
@@ -35,10 +36,26 @@ class AddFlashcardsEvent extends CardsEvents {
   final String collectionUuid;
   final String question;
   final String answer;
+  final String note;
+  final List<String> choices;
+  final int correctChoiceIndex;
+  final List<CardAttachment> attachments;
+  final List<Flashcard> children;
+  final List<String> tags;
+  final Completer<String?>? completer;
+  final String? uuid;
   const AddFlashcardsEvent({
     required this.collectionUuid,
     required this.question,
     required this.answer,
+    this.note = '',
+    this.choices = const [],
+    this.correctChoiceIndex = 0,
+    this.attachments = const [],
+    this.children = const [],
+    this.tags = const [],
+    this.completer,
+    this.uuid,
   });
 }
 
@@ -53,6 +70,19 @@ class UpdateDueTimeEvent extends CardsEvents {
   });
 }
 
+class MarkAllCardsEasyEvent extends CardsEvents {
+  final String collectionUuid;
+  final Completer<void> completer;
+
+  const MarkAllCardsEasyEvent({
+    required this.collectionUuid,
+    required this.completer,
+  });
+
+  @override
+  List<Object?> get props => [collectionUuid];
+}
+
 class RemoveFlashcardsEvent extends CardsEvents {
   final FlashcardCollection collection;
   final String flashcardUuid;
@@ -64,7 +94,18 @@ class RemoveFlashcardsEvent extends CardsEvents {
 
 class EditFlashcardsEvent extends CardsEvents {
   final EditFlashcardParameters parameters;
-  const EditFlashcardsEvent({required this.parameters});
+  final Completer<String?>? completer;
+  const EditFlashcardsEvent({required this.parameters, this.completer});
+}
+
+class ReorderFlashcardsEvent extends CardsEvents {
+  final String collectionUuid;
+  final List<String> flashcardUuids;
+
+  const ReorderFlashcardsEvent({
+    required this.collectionUuid,
+    required this.flashcardUuids,
+  });
 }
 
 class GetDueReviewsEvent extends CardsEvents {
@@ -85,14 +126,26 @@ class EditCollectionEvent extends CardsEvents {
 
 class GetMultipleQuizOptionsEvent extends CardsEvents {
   final FlashcardCollection collection;
+  final bool shuffle;
 
-  const GetMultipleQuizOptionsEvent({required this.collection});
+  const GetMultipleQuizOptionsEvent({
+    required this.collection,
+    this.shuffle = false,
+  });
 }
 
 class GenerateFlashcardsEvent extends CardsEvents {
-  final File file;
+  final File? file;
+  final List<File> files;
+  final String? sourceUrl;
+  final String prompt;
+  final String notes;
   const GenerateFlashcardsEvent({
-    required this.file,
+    this.file,
+    this.files = const [],
+    this.sourceUrl,
+    this.prompt = '',
+    this.notes = '',
   });
 }
 
@@ -111,4 +164,21 @@ class CombineCollectionsEvent extends CardsEvents {
     required this.mainCollection,
     required this.secondaryCollection,
   });
+}
+
+class ImportCollectionEvent extends CardsEvents {
+  final FlashcardCollection collection;
+  const ImportCollectionEvent({required this.collection});
+}
+
+class ImportCollectionsEvent extends CardsEvents {
+  final List<FlashcardCollection> collections;
+  final Completer<void> completer;
+  const ImportCollectionsEvent({
+    required this.collections,
+    required this.completer,
+  });
+
+  @override
+  List<Object?> get props => [collections];
 }

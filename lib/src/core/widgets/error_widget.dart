@@ -21,7 +21,7 @@ class CustomErrorWidget extends StatelessWidget {
             TextButton(
                 onPressed: () {
                   context.read<CardsBloc>().add(const GetCollectionsEvent());
-                  Navigator.of(context).pushReplacementNamed('/');
+                  Navigator.of(context).popUntil((route) => route.isFirst);
                 },
                 child: const Text(AppStrings.goBack))
           ],

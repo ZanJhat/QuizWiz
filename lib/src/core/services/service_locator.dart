@@ -10,10 +10,9 @@ class ServiceLocator {
     //data sources
     sl.registerLazySingleton(() => CollectionLocalDataSource());
     sl.registerLazySingleton(() => FlashcardLocalDataSource());
-    sl.registerLazySingleton(() => BaseRemoteDataSource());
     sl.registerLazySingleton<Isar>(() => Isar.getInstance()!);
     //repository
-    sl.registerLazySingleton(() => BaseCardsRepository(sl(), sl(), sl()));
+    sl.registerLazySingleton(() => BaseCardsRepository(sl(), sl()));
     //bloc
     sl.registerFactory<CardsBloc>(() => CardsBloc(sl(), sl()));
     sl.registerFactory(() => ThemeCubit());

@@ -6,7 +6,17 @@ import 'package:uuid/uuid.dart';
 abstract class FlashcardLocalDataSource {
   factory FlashcardLocalDataSource() => IsarFlashcardDataSource();
   Future<Unit> addFlashcard(
-      String question, String answer, String collectionUuid);
+    String question,
+    String answer,
+    String collectionUuid, {
+    String note = '',
+    List<String> choices = const [],
+    int correctChoiceIndex = 0,
+    List<CardAttachment> attachments = const [],
+    List<Flashcard> children = const [],
+    List<String> tags = const [],
+    String? uuid,
+  });
 
   Future<List<Flashcard>> getDueReviewCards(
     FlashcardCollection collection,
@@ -16,9 +26,12 @@ abstract class FlashcardLocalDataSource {
     String collectionUuid,
     ReviewResult reviewResult,
   );
+  Future<Unit> markAllCardsEasy(String collectionUuid);
   Future<Unit> removeFlashcard(
       FlashcardCollection collection, String flashcardUuid);
   Future<Unit> editFlashcard(EditFlashcardParameters parameters);
+  Future<Unit> reorderFlashcards(
+      String collectionUuid, List<String> flashcardUuids);
   Future<List<MultipleChoiceQuiz>> getMultipleChoiceOptions(
       FlashcardCollection collection);
   Future<Unit> saveAllGeneratedFlashcard(
@@ -31,19 +44,39 @@ class IsarFlashcardDataSource implements FlashcardLocalDataSource {
 
   @override
   Future<Unit> addFlashcard(
-      String question, String answer, String collectionUuid) async {
+    String question,
+    String answer,
+    String collectionUuid, {
+    String note = '',
+    List<String> choices = const [],
+    int correctChoiceIndex = 0,
+    List<CardAttachment> attachments = const [],
+    List<Flashcard> children = const [],
+    List<String> tags = const [],
+    String? uuid,
+  }) async {
     final flashcard = Flashcard(
         question: question,
         answer: answer,
-        uuid: uuid.v4(),
-        dueTime: DateTime.now().millisecondsSinceEpoch);
+        note: note,
+        uuid: uuid ?? this.uuid.v4(),
+        dueTime: DateTime.now().millisecondsSinceEpoch,
+        choices: choices,
+        correctChoiceIndex: correctChoiceIndex,
+        attachments: attachments,
+        tags: tags);
+    final savedFlashcard = flashcard.copyWith(children: children);
     await _instance.writeTxn(() async {
       final collection =
           await _instance.flashcardCollections.getByUuid(collectionUuid);
-      List<Flashcard> cards = [
-        ...collection!.cards,
-      ];
-      cards.add(flashcard);
+      if (collection == null) {
+        throw const LocalStorageException(
+            message: 'Không tìm thấy bộ thẻ để lưu card');
+      }
+      final cards = collection.cards
+          .where((card) => card.uuid != savedFlashcard.uuid)
+          .toList()
+        ..add(savedFlashcard);
       await _instance.flashcardCollections
           .put(collection.copyWith(cards: cards));
     }).onError((error, stackTrace) =>
@@ -53,7 +86,8 @@ class IsarFlashcardDataSource implements FlashcardLocalDataSource {
 
   @override
   Future<List<Flashcard>> getDueReviewCards(
-      FlashcardCollection collection) async {
+    FlashcardCollection collection,
+  ) async {
     final cards = collection.cards.where((card) {
       return DateTime.fromMillisecondsSinceEpoch(card.dueTime)
           .isBefore(DateTime.now());
@@ -65,24 +99,50 @@ class IsarFlashcardDataSource implements FlashcardLocalDataSource {
   @override
   Future<Unit> updateDueTime(
       Flashcard card, String collectionUuid, ReviewResult reviewResult) async {
-    //make a new card with updated [dueReview, factor, interval]
-    final newCard = CardCalculation(card).update(reviewResult);
-
     await _instance.writeTxn(() async {
-      //get the old collection
       final collection =
           await _instance.flashcardCollections.getByUuid(collectionUuid);
 
-      // make a new cards list where the old card is excluded and the new card is added
-      List<Flashcard> newCardList = [];
-      newCardList.addAll(collection!.cards
-          .where((element) => element.uuid != card.uuid)
-          .toList());
-      newCardList.add(newCard);
+      final newCardList = collection!.cards.map((storedCard) {
+        if (storedCard.uuid != card.uuid) return storedCard;
+        if (!storedCard.isGroup) {
+          return CardCalculation(storedCard).update(reviewResult);
+        }
+        return storedCard.copyWith(
+          children: storedCard.children
+              .map((child) => CardCalculation(child).update(reviewResult))
+              .toList(),
+        );
+      }).toList();
 
-      //update the collection with the new cards list
       await _instance.flashcardCollections
           .put(collection.copyWith(cards: newCardList));
+    });
+    return unit;
+  }
+
+  @override
+  Future<Unit> markAllCardsEasy(String collectionUuid) async {
+    await _instance.writeTxn(() async {
+      final collection =
+          await _instance.flashcardCollections.getByUuid(collectionUuid);
+      if (collection == null) {
+        throw const LocalStorageException(
+            message: 'Không tìm thấy bộ thẻ cần cập nhật');
+      }
+      final easyCards = collection.cards.map((card) {
+        if (!card.isGroup) {
+          return CardCalculation(card.copyWith()).update(ReviewResult.easy);
+        }
+        return card.copyWith(
+          children: card.children
+              .map((child) =>
+                  CardCalculation(child.copyWith()).update(ReviewResult.easy))
+              .toList(),
+        );
+      }).toList();
+      await _instance.flashcardCollections
+          .put(collection.copyWith(cards: easyCards));
     });
     return unit;
   }
@@ -102,22 +162,60 @@ class IsarFlashcardDataSource implements FlashcardLocalDataSource {
   @override
   Future<Unit> editFlashcard(EditFlashcardParameters parameters) async {
     await _instance.writeTxn(() async {
-      final findCard = parameters.collection.cards
+      final collection = await _instance.flashcardCollections
+          .getByUuid(parameters.collection.uuid);
+      if (collection == null) {
+        throw const LocalStorageException(
+            message: 'Không tìm thấy bộ thẻ cần cập nhật');
+      }
+      final findCard = collection.cards
           .where((element) => element.uuid == parameters.flashcard.uuid);
-      //create the updated card
-      final newCard = findCard.single
-          .copyWith(question: parameters.question, answer: parameters.answer);
-      //create a new card list without the old card
-      List<Flashcard> newList = parameters.collection.cards
-          .where((element) => element.uuid != parameters.flashcard.uuid)
+      final newCard = findCard.single.copyWith(
+        question: parameters.question,
+        answer: parameters.answer,
+        note: parameters.note ?? findCard.single.note,
+        choices: parameters.choices,
+        correctChoiceIndex: parameters.correctChoiceIndex,
+        attachments: parameters.attachments,
+        tags: parameters.tags ?? findCard.single.tags,
+        children: parameters.children ?? findCard.single.children,
+      );
+      final newList = collection.cards
+          .map(
+              (card) => card.uuid == parameters.flashcard.uuid ? newCard : card)
           .toList();
-      //add the updated card to list
-      newList.add(newCard);
 
-      //update the collection
       await _instance.flashcardCollections
-          .put(parameters.collection.copyWith(cards: newList));
+          .put(collection.copyWith(cards: newList));
     });
+    return unit;
+  }
+
+  @override
+  Future<Unit> reorderFlashcards(
+      String collectionUuid, List<String> flashcardUuids) async {
+    await _instance.writeTxn(() async {
+      final collection =
+          await _instance.flashcardCollections.getByUuid(collectionUuid);
+      if (collection == null) {
+        throw const LocalStorageException(
+            message: 'Không tìm thấy bộ thẻ cần sắp xếp');
+      }
+
+      final cardsByUuid = {
+        for (final card in collection.cards) card.uuid: card,
+      };
+      final reorderedCards = <Flashcard>[];
+      for (final flashcardUuid in flashcardUuids) {
+        final card = cardsByUuid.remove(flashcardUuid);
+        if (card != null) reorderedCards.add(card);
+      }
+      reorderedCards.addAll(cardsByUuid.values);
+
+      await _instance.flashcardCollections
+          .put(collection.copyWith(cards: reorderedCards));
+    }).onError((error, stackTrace) =>
+        throw LocalStorageException(message: error.toString()));
     return unit;
   }
 
@@ -126,8 +224,32 @@ class IsarFlashcardDataSource implements FlashcardLocalDataSource {
       FlashcardCollection collection) async {
     List<MultipleChoiceQuiz> result = [];
     for (var element in collection.cards) {
-      result.add(MultipleChoiceQuiz.fromCollection(
-          card: element, collection: collection));
+      final quizCollection = FlashcardCollection(
+        name: collection.name,
+        description: collection.description,
+        uuid: collection.uuid,
+        cards: [...collection.cards, ...element.children],
+      );
+      if (element.isGroup) {
+        final childQuizzes = element.children.map((child) {
+          final card = child.copyWith(
+            attachments: child.attachments.isEmpty
+                ? element.attachments
+                : child.attachments,
+          );
+          return MultipleChoiceQuiz.fromCollection(
+              card: card, collection: quizCollection);
+        }).toList();
+        result.add(MultipleChoiceQuiz(
+          question: element.question,
+          options: const [],
+          card: element,
+          children: childQuizzes,
+        ));
+      } else {
+        result.add(MultipleChoiceQuiz.fromCollection(
+            card: element, collection: quizCollection));
+      }
     }
     return result;
   }
@@ -139,7 +261,16 @@ class IsarFlashcardDataSource implements FlashcardLocalDataSource {
       final collection =
           await _instance.flashcardCollections.getByUuid(collectionUuid);
       List<Flashcard> newCardsList = [...collection!.cards];
-      newCardsList.addAll(flashcards);
+      final now = DateTime.now().millisecondsSinceEpoch;
+      newCardsList.addAll(flashcards.map((card) {
+        if (card.uuid.isEmpty) {
+          return card.copyWith(
+            uuid: uuid.v4(),
+            dueTime: now,
+          );
+        }
+        return card.dueTime == 0 ? card.copyWith(dueTime: now) : card;
+      }));
       await _instance.flashcardCollections
           .put(collection.copyWith(cards: newCardsList));
     }).onError((error, stackTrace) =>

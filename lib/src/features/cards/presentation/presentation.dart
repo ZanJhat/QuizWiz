@@ -9,10 +9,12 @@ export 'package:quizwiz/src/features/cards/presentation/screens/generated_flashc
 export 'package:quizwiz/src/features/cards/presentation/screens/multiple_choice_quiz_screen.dart';
 export 'package:quizwiz/src/features/cards/presentation/screens/practice_cards_screen.dart';
 export 'package:quizwiz/src/features/cards/presentation/screens/review_result_screen.dart';
+export 'package:quizwiz/src/features/cards/presentation/screens/settings_screen.dart';
 export 'package:quizwiz/src/features/cards/presentation/widgets/home_screen_widgets/create_collection_dialog.dart';
 export 'package:quizwiz/src/features/cards/presentation/widgets/generated_flashcards/generated_flashcard_widget.dart';
 export 'package:flutter/material.dart';
 export 'package:quizwiz/src/features/cards/presentation/widgets/flashcards_list_widgets/flashcard_widget.dart';
+export 'package:quizwiz/src/features/cards/presentation/widgets/card_note_view.dart';
 export 'package:quizwiz/src/features/cards/presentation/widgets/create_flashcards_widgets/forms.dart';
 export 'package:quizwiz/src/features/cards/presentation/widgets/flashcards_list_widgets/custom_focused_menu_holder.dart';
 export 'package:quizwiz/src/features/cards/presentation/widgets/multiple_choice_quiz_widgets/multiple_choice_body.dart';
